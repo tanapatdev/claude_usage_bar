@@ -56,6 +56,29 @@ Once installed:
 - **`/claude-usage-bar:run`** — manually relaunch the app anytime without waiting for a new session (e.g. after quitting it mid-session)
 - Click **"Enable Precise"** in the panel to wire up real `/usage` data (see below) — shows a confirm dialog before touching anything on disk
 
+### Manual install via `claude plugin marketplace`
+
+`scripts/install.sh` is just a wrapper around these two commands:
+
+```bash
+claude plugin marketplace add <source>
+claude plugin install claude-usage-bar@claude-usage-bar-marketplace
+```
+
+Where `<source>` is either:
+- **A local directory path** — `claude plugin marketplace add /path/to/claude_usage` (useful for a local clone, no push required)
+- **The GitHub URL** — `claude plugin marketplace add https://github.com/tanapatdev/claude_usage_bar.git`
+
+Either way, restart Claude Code afterward (exit and run `claude` again) — plugins and hooks only load at session start, never mid-session.
+
+If the plugin is already installed and you want to force-refresh it to the latest marketplace content, `claude plugin install` alone won't do it (it no-ops when already installed), and `claude plugin update` only refreshes when `.claude-plugin/plugin.json`'s `version` field has changed. To guarantee a fresh copy regardless, uninstall first:
+
+```bash
+claude plugin marketplace update claude-usage-bar-marketplace
+claude plugin uninstall claude-usage-bar@claude-usage-bar-marketplace
+claude plugin install claude-usage-bar@claude-usage-bar-marketplace
+```
+
 ### Precise mode: the statusline hook
 
 Whether or not you install via the plugin, precise mode needs the statusline hook installed. The easiest way is the **"Enable Precise"** button in the app's panel — it copies `statusline_bridge.py` to `~/.claude/hooks/` and adds a `statusLine` entry to `~/.claude/settings.json`, after you confirm.
