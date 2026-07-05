@@ -10,10 +10,14 @@ Manually launch (or relaunch) the Claude Usage menu bar app, the same way the Se
 
 ## Steps
 
-1. Resolve the installed plugin's root directory from the marketplace registration in `~/.claude/settings.json`. Do not hardcode a path — the plugin may be reinstalled from a different location later.
+1. Resolve the actual installed plugin directory. This is the versioned cache Claude Code installs plugins into (`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`) — NOT the marketplace registration's `source.path` in `settings.json`, which refers to where the marketplace itself was registered from (a local directory or a git clone) and can point somewhere stale or unrelated to what's actually active.
 
    ```bash
-   PLUGIN_ROOT=$(jq -r '.extraKnownMarketplaces["claude-usage-bar-marketplace"].source.path // empty' ~/.claude/settings.json)
+   PLUGIN_ROOT=$(find "$HOME/.claude/plugins/cache/claude-usage-bar-marketplace/claude-usage-bar" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | sort -V | tail -1)
+   # Fallback for a directory-sourced marketplace with no versioned cache
+   if [ -z "$PLUGIN_ROOT" ]; then
+     PLUGIN_ROOT=$(jq -r '.extraKnownMarketplaces["claude-usage-bar-marketplace"].source.path // empty' ~/.claude/settings.json)
+   fi
    ```
 
 2. If `$PLUGIN_ROOT` is empty, or `"$PLUGIN_ROOT/hooks/scripts/launch-usage-bar.sh"` does not exist, tell the user the plugin doesn't appear to be installed (`claude plugin install claude-usage-bar@claude-usage-bar-marketplace`) and stop.
