@@ -1,0 +1,14 @@
+{
+  "name": "claude-usage-bar-marketplace",
+  "description": "Personal local marketplace for the Claude Usage Bar plugin.",
+  "owner": {
+    "name": "Affa"
+  },
+  "plugins": [
+    {
+      "name": "claude-usage-bar",
+      "description": "Auto-launches the Claude Usage menu bar app at the start of every Claude Code session.",
+      "source": "./"
+    }
+  ]
+}

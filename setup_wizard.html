@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --mascot-color: #D77757;
+    --eye-color: #000000;
+    --bg: #201E1B;
+    --text-primary: rgba(255, 255, 255, 0.94);
+    --text-secondary: rgba(255, 255, 255, 0.55);
+    --field-bg: rgba(255, 255, 255, 0.08);
+    --field-border: rgba(255, 255, 255, 0.14);
+    --divider-color: rgba(255, 255, 255, 0.08);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #F5F3F1;
+      --text-primary: rgba(0, 0, 0, 0.88);
+      --text-secondary: rgba(0, 0, 0, 0.52);
+      --field-bg: rgba(0, 0, 0, 0.05);
+      --field-border: rgba(0, 0, 0, 0.12);
+      --divider-color: rgba(0, 0, 0, 0.08);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes blink { 0%, 88%, 100% { transform: scaleY(1); } 94% { transform: scaleY(0.12); } }
+  @keyframes legStep { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
+
+  #page {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 22px 24px 20px; height: 100%;
+  }
+  h1 {
+    margin: 0; font-size: 16px; font-weight: 700; color: var(--text-primary);
+    text-align: center;
+  }
+  .subtitle {
+    margin: 4px 0 0; font-size: 12px; color: var(--text-secondary); text-align: center;
+  }
+
+  #mascot-grid { position: relative; margin: 14px 0 6px; }
+  .cell { position: absolute; }
+
+  label {
+    align-self: flex-start; font-size: 11.5px; font-weight: 600; color: var(--text-secondary);
+    margin: 10px 0 6px; letter-spacing: 0.2px;
+  }
+  #name-input {
+    width: 100%; font-size: 14px; color: var(--text-primary);
+    background: var(--field-bg); border: 1px solid var(--field-border);
+    border-radius: 8px; padding: 9px 10px; outline: none;
+  }
+  #name-input:focus { border-color: var(--mascot-color); }
+
+  #swatches {
+    display: flex; justify-content: center; gap: 10px; margin-top: 4px;
+  }
+  .swatch {
+    width: 26px; height: 26px; border-radius: 50%; cursor: default;
+    border: 2px solid transparent; box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+  }
+  .swatch.selected { border-color: var(--text-primary); }
+
+  #actions { margin-top: auto; width: 100%; display: flex; flex-direction: column; gap: 8px; }
+  #start-btn {
+    all: unset; text-align: center; cursor: default;
+    background: var(--mascot-color); color: #201E1B; font-size: 13.5px; font-weight: 700;
+    border-radius: 8px; padding: 10px 0;
+  }
+  #skip-link {
+    all: unset; text-align: center; cursor: default;
+    font-size: 11.5px; color: var(--text-secondary); padding: 4px 0;
+  }
+  #skip-link:hover { color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<div id="page">
+  <h1>Set up your mascot</h1>
+  <div class="subtitle">Name it and pick a color before you start using Claude Usage</div>
+
+  <div id="mascot-grid"></div>
+
+  <label for="name-input">Mascot name</label>
+  <input id="name-input" type="text" maxlength="20" placeholder="e.g. Pip" value="Pip">
+
+  <label>Color</label>
+  <div id="swatches"></div>
+
+  <div id="actions">
+    <button id="start-btn" onclick="submitWizard()">Get Started</button>
+    <button id="skip-link" onclick="skipWizard()">Skip for now (use defaults)</button>
+  </div>
+</div>
+
+<script>
+  const GRID = [
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,1,2,1,1,1,1,1,1,2,1,1,0,0],
+    [0,0,1,1,2,1,1,1,1,1,1,2,1,1,0,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,0,3,0,4,0,0,0,0,3,0,4,0,0,0],
+    [0,0,0,3,0,4,0,0,0,0,3,0,4,0,0,0],
+  ];
+  const CELL_SIZE = 9;
+  const gridEl = document.getElementById("mascot-grid");
+  gridEl.style.width = (16 * CELL_SIZE) + "px";
+  gridEl.style.height = (11 * CELL_SIZE) + "px";
+  gridEl.style.animation = "bob 2s ease-in-out infinite";
+
+  function buildMascot() {
+    gridEl.innerHTML = "";
+    GRID.forEach((row, r) => {
+      row.forEach((v, c) => {
+        if (v === 0) return;
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.style.left = (c * CELL_SIZE) + "px";
+        div.style.top = (r * CELL_SIZE) + "px";
+        div.style.width = CELL_SIZE + "px";
+        div.style.height = CELL_SIZE + "px";
+        if (v === 2) {
+          div.style.background = "var(--eye-color)";
+          div.style.animation = "blink 3.5s ease-in-out infinite";
+        } else if (v === 3) {
+          div.style.background = "var(--mascot-color)";
+          div.style.animation = "legStep 1s ease-in-out infinite";
+        } else if (v === 4) {
+          div.style.background = "var(--mascot-color)";
+          div.style.animation = "legStep 1s ease-in-out infinite 0.5s";
+        } else {
+          div.style.background = "var(--mascot-color)";
+        }
+        gridEl.appendChild(div);
+      });
+    });
+  }
+  buildMascot();
+
+  const PALETTE = ["#D77757", "#D2794F", "#C15F3C", "#E08E5C", "#5B8DEF", "#6FA96F"];
+  let selectedColor = PALETTE[0];
+  const swatchesEl = document.getElementById("swatches");
+
+  function selectSwatch(color) {
+    selectedColor = color;
+    document.documentElement.style.setProperty("--mascot-color", color);
+    [...swatchesEl.children].forEach((s) => {
+      s.classList.toggle("selected", s.dataset.color === color);
+    });
+  }
+
+  PALETTE.forEach((color) => {
+    const el = document.createElement("div");
+    el.className = "swatch" + (color === selectedColor ? " selected" : "");
+    el.style.background = color;
+    el.dataset.color = color;
+    el.onclick = () => selectSwatch(color);
+    swatchesEl.appendChild(el);
+  });
+
+  function bridge(payload) {
+    try {
+      window.webkit.messageHandlers.wizard.postMessage(payload);
+    } catch (e) {
+      // running outside WKWebView — no-op
+    }
+  }
+
+  function submitWizard() {
+    const name = document.getElementById("name-input").value.trim() || "Pip";
+    bridge({ action: "submit", name: name, color: selectedColor });
+  }
+
+  function skipWizard() {
+    bridge({ action: "skip" });
+  }
+
+  // เรียกจาก Python เมื่อเปิด wizard เพื่อ "แก้ไข" ค่าที่ตั้งไว้แล้ว (ไม่ใช่ setup ครั้งแรก)
+  window.prefill = function (data) {
+    if (data.name) {
+      document.getElementById("name-input").value = data.name;
+    }
+    if (data.color) {
+      selectSwatch(data.color);
+    }
+    if (data.editing) {
+      document.querySelector("h1").textContent = "Edit your mascot";
+      document.querySelector(".subtitle").textContent = "Update the name or color, or cancel to keep it as-is";
+      document.getElementById("start-btn").textContent = "Save Changes";
+      document.getElementById("skip-link").textContent = "Cancel";
+    }
+  };
+</script>
+
+</body>
+</html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --mascot-color: #D77757;
+    --eye-color: #000000;
+    --panel-bg: rgba(38, 35, 32, 0.94);
+    --text-primary: rgba(255, 255, 255, 0.94);
+    --text-secondary: rgba(255, 255, 255, 0.55);
+    --track-bg: rgba(255, 255, 255, 0.12);
+    --divider-color: rgba(255, 255, 255, 0.08);
+    --badge-bg: color-mix(in srgb, var(--mascot-color) 18%, transparent);
+    --footer-hover: rgba(255, 255, 255, 0.08);
+    --warn-bg: rgba(217, 119, 6, 0.16);
+    --warn-text: #f0b429;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --panel-bg: rgba(255, 255, 255, 0.96);
+      --text-primary: rgba(0, 0, 0, 0.88);
+      --text-secondary: rgba(0, 0, 0, 0.52);
+      --track-bg: rgba(0, 0, 0, 0.08);
+      --divider-color: rgba(0, 0, 0, 0.08);
+      --badge-bg: color-mix(in srgb, var(--mascot-color) 14%, transparent);
+      --footer-hover: rgba(0, 0, 0, 0.06);
+      --warn-bg: rgba(217, 119, 6, 0.12);
+      --warn-text: #9a5b00;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes blink { 0%, 88%, 100% { transform: scaleY(1); } 94% { transform: scaleY(0.12); } }
+  @keyframes legStep { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(2.5px); } }
+  @keyframes popIn { 0% { opacity: 0; transform: translateY(-6px) scale(0.96); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+
+  #wrap {
+    position: relative;
+    padding-top: 6px;
+    animation: popIn 0.14s ease-out;
+  }
+  #tail {
+    position: absolute;
+    top: 0;
+    right: 22px;
+    width: 12px;
+    height: 12px;
+    background: var(--panel-bg);
+    transform: rotate(45deg);
+    border-radius: 2px;
+  }
+  #card {
+    position: relative;
+    background: var(--panel-bg);
+    border-radius: 12px;
+    box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.06);
+    padding: 18px 18px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .row { display: flex; align-items: center; }
+  .header { gap: 10px; }
+  .header-text {
+    display: flex; flex-direction: column; gap: 2px;
+    flex: 1 1 auto; min-width: 0;
+  }
+  .title {
+    color: var(--text-primary); font-size: 14px; font-weight: 600; line-height: 1.25;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .subtitle {
+    font-size: 11px; color: var(--text-secondary);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .badge {
+    margin-left: auto; font-size: 11px; font-weight: 600; color: var(--mascot-color);
+    background: var(--badge-bg); padding: 3px 8px; border-radius: 6px; letter-spacing: 0.2px;
+    max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 0 auto;
+  }
+  .warn-strip {
+    display: none;
+    font-size: 11px; color: var(--warn-text); background: var(--warn-bg);
+    padding: 5px 8px; border-radius: 6px; line-height: 1.35;
+  }
+  .warn-strip.show { display: block; }
+
+  #mascot-area { display: flex; align-items: center; justify-content: center; padding: 4px 0 0; }
+  #mascot-grid { position: relative; }
+  .cell { position: absolute; }
+
+  .stat-block { display: flex; flex-direction: column; gap: 6px; }
+  .stat-row { justify-content: space-between; font-size: 12.5px; color: var(--text-secondary); }
+  .stat-row .val { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .bar-track { width: 100%; height: 6px; border-radius: 3px; background: var(--track-bg); overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--mascot-color); transition: width 0.4s ease; }
+  .reset-text { font-size: 11px; color: var(--text-secondary); }
+
+  .divider { height: 1px; background: var(--divider-color); }
+
+  .context-row { justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+  .context-row .val { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+  #footer {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    margin: 2px -6px -2px;
+    font-size: 11px; color: var(--text-secondary);
+  }
+  #footer .updated { padding: 2px 6px; }
+  #footer .actions { display: flex; justify-content: center; flex-wrap: wrap; row-gap: 2px; }
+  #footer button {
+    all: unset; cursor: default; font-size: 10.5px; color: var(--text-secondary);
+    padding: 4px 5px; border-radius: 5px; white-space: nowrap;
+  }
+  #footer button:hover { background: var(--footer-hover); color: var(--text-primary); }
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <div id="tail"></div>
+  <div id="card">
+    <div class="row header">
+      <div class="header-text">
+        <div class="title" id="title-label">Claude Usage</div>
+        <div class="subtitle" id="plan-label">—</div>
+      </div>
+      <div class="badge" id="model-badge">—</div>
+    </div>
+
+    <div class="warn-strip" id="warn-strip"></div>
+
+    <div id="mascot-area">
+      <div id="mascot-grid"></div>
+    </div>
+
+    <div class="stat-block">
+      <div class="row stat-row">
+        <div>Session usage (5h)</div>
+        <div class="val" id="session-val">—</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="session-bar" style="width:0%"></div></div>
+      <div class="reset-text" id="session-reset">—</div>
+    </div>
+
+    <div class="stat-block">
+      <div class="row stat-row">
+        <div>Week usage (7d)</div>
+        <div class="val" id="week-val">—</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="week-bar" style="width:0%"></div></div>
+      <div class="reset-text" id="week-reset">—</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row context-row">
+      <div>Session context</div>
+      <div class="val" id="context-val">—</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="footer">
+      <div class="updated" id="updated-label">—</div>
+      <div class="actions">
+        <button onclick="bridge('refresh')">Refresh</button>
+        <button id="enable-precise-btn" onclick="bridge('enable_precise')">Enable Precise</button>
+        <button onclick="bridge('setup')">Setup</button>
+        <button onclick="bridge('open_config')">Config</button>
+        <button onclick="bridge('quit')">Quit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // 16 cols x 11 rows. 0 empty, 1 body, 2 eye, 3 legA, 4 legB
+  const GRID = [
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,1,2,1,1,1,1,1,1,2,1,1,0,0],
+    [0,0,1,1,2,1,1,1,1,1,1,2,1,1,0,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0],
+    [0,0,0,3,0,4,0,0,0,0,3,0,4,0,0,0],
+    [0,0,0,3,0,4,0,0,0,0,3,0,4,0,0,0],
+  ];
+  const CELL_SIZE = 10;
+  const gridEl = document.getElementById("mascot-grid");
+  gridEl.style.width = (16 * CELL_SIZE) + "px";
+  gridEl.style.height = (11 * CELL_SIZE) + "px";
+
+  function buildMascot(usagePercent) {
+    gridEl.innerHTML = "";
+    const t = Math.max(0, Math.min(1, (usagePercent || 0) / 100));
+    const legDur = (1.5 - t * 1.0).toFixed(2);
+    const blinkDur = (5 - t * 2.5).toFixed(2);
+    GRID.forEach((row, r) => {
+      row.forEach((v, c) => {
+        if (v === 0) return;
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.style.left = (c * CELL_SIZE) + "px";
+        div.style.top = (r * CELL_SIZE) + "px";
+        div.style.width = CELL_SIZE + "px";
+        div.style.height = CELL_SIZE + "px";
+        if (v === 1) {
+          div.style.background = "var(--mascot-color)";
+        } else if (v === 2) {
+          div.style.background = "var(--eye-color)";
+          div.style.animation = `blink ${blinkDur}s ease-in-out infinite`;
+        } else if (v === 3) {
+          div.style.background = "var(--mascot-color)";
+          div.style.animation = `legStep ${legDur}s ease-in-out infinite`;
+        } else if (v === 4) {
+          div.style.background = "var(--mascot-color)";
+          div.style.animation = `legStep ${legDur}s ease-in-out infinite ${(legDur / 2).toFixed(2)}s`;
+        }
+        gridEl.appendChild(div);
+      });
+    });
+    const bobDur = (2.6 - t * 1.6).toFixed(2);
+    gridEl.style.animation = `bob ${bobDur}s ease-in-out infinite`;
+  }
+
+  function bridge(action) {
+    try {
+      window.webkit.messageHandlers.bridge.postMessage(action);
+    } catch (e) {
+      // running outside WKWebView (e.g. plain browser preview) — no-op
+    }
+  }
+
+  function setBar(id, pct) {
+    const el = document.getElementById(id);
+    el.style.width = Math.max(0, Math.min(100, pct || 0)) + "%";
+  }
+
+  // data = {
+  //   mode: 'precise' | 'estimate',
+  //   stale: bool,
+  //   modelName: string,
+  //   planLabel: string|null,
+  //   titleLabel: string,
+  //   mascotColor: string,
+  //   sessionPct: number|null, sessionValueLabel: string, sessionResetLabel: string,
+  //   weekPct: number|null, weekValueLabel: string, weekResetLabel: string,
+  //   contextLabel: string,
+  //   updatedLabel: string,
+  //   warnLabel: string|null,
+  // }
+  window.renderData = function (data) {
+    if (data.mascotColor) {
+      document.documentElement.style.setProperty("--mascot-color", data.mascotColor);
+    }
+    document.getElementById("title-label").textContent = data.titleLabel || "Claude Usage";
+    document.getElementById("model-badge").textContent = data.modelName || "Claude";
+    document.getElementById("plan-label").textContent = data.planLabel || "—";
+
+    const warnEl = document.getElementById("warn-strip");
+    if (data.warnLabel) {
+      warnEl.textContent = data.warnLabel;
+      warnEl.classList.add("show");
+    } else {
+      warnEl.classList.remove("show");
+    }
+
+    document.getElementById("session-val").textContent = data.sessionValueLabel || "—";
+    setBar("session-bar", data.sessionPct);
+    document.getElementById("session-reset").textContent = data.sessionResetLabel || "—";
+
+    document.getElementById("week-val").textContent = data.weekValueLabel || "—";
+    setBar("week-bar", data.weekPct);
+    document.getElementById("week-reset").textContent = data.weekResetLabel || "—";
+
+    document.getElementById("context-val").textContent = data.contextLabel || "—";
+    document.getElementById("updated-label").textContent = data.updatedLabel || "—";
+
+    buildMascot(data.sessionPct);
+  };
+
+  // initial paint before Python pushes real data
+  renderData({ modelName: "Claude", sessionPct: 0, weekPct: 0 });
+</script>
+
+</body>
+</html>
